@@ -1,56 +1,50 @@
 #include<stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include<signal.h>
+#include<unistd.h>
+
+int n[100];
+int i = 0;
+
 void sig_handler_parent(int signum){
-  printf("Parent : Received a response signal from child \n");
+
+    //Return type of the handler function should be void
+    
+    while(i >= 0){
+        printf("\nParent: Killing child %d \n", n[i]);
+        kill(n[i], SIGKILL);
+    }
+
+    //kill children
+    signal(SIGINT, SIG_DFL);
 }
 
 void sig_handler_child(int signum){
-  while(incrementer < num){
-  printf("I am waiting for my brothers...\n");
-  raise(signum);
-  }
+
+    //Return type of the handler function should be void
+    printf("\nChild: Insider handler function\n");
 }
 
 int main(){
-  pid_t pid;
-  if((pid=fork())<0){
-    printf("Fork Failed\n");
-    exit(1);
-  }
-  /* Parent Process */
-  else if(pid > 0){
-    signal(SIGUSR1,sig_handler_parent); // Register signal handler
-    sleep(1);
-    //https://www.includehelp.com/c-programs/generate-random-numbers-within-a-range.aspx
-    int lower = 5;
-    int upper = 20;
-    int num = (rand() % (upper - lower + 1) + lower);
-    int incrementer = 0;
-    printf("Parent: my number of hit points are: %d\n", num);
-    kill(pid,SIGUSR1);
-    while(incrementer < num){
-        fork();
-        incrementer++;
-        sleep(1);
-        kill(pid,SIGUSR1);
-        //printf("Child: I am waiting for my brothers...\n");
-        
-        //printf("incrementer: %d", incrementer);
-        
+    while(1){
+        int pid = fork();
+        if(pid == 0){
+            signal(SIGUSR1, sig_handler_child); //Register signal handler
+            printf("\nChild created...my pid is %d\n", getpid());
+            pause(); //child should wait for a signal
+            printf("\nChild is dying!!!!!!\n");
+        }
+        else{
+            sleep(2);
+            signal(SIGINT, sig_handler_parent);
+            n[i] = pid;
+            i++;
+            printf("\nIn parent\n");
+            //kill(pid, SIGUSR1);
+            //printf("\nParent: waiting for response\n");
+            //pause();
+
+        }
+
     }
     
-    
-    pause();
-
-      //
-  }
-  /* Child Process */
-  else{
-    signal(SIGUSR1,sig_handler_child); // Register signal handler
-    sleep(1);
-    pause();
-  }
-  return 0;
 }
